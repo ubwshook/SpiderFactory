@@ -8,6 +8,7 @@
 import time
 import requests
 import log
+import pyodbc
 
 # 爬虫主类
 class WebSpider:
@@ -89,8 +90,33 @@ class WebSpider:
         return
 
     # 如果使用数据保存，覆写此函数
-    def saveByDb(self, para, data):
-        return
+    def saveByDb(self, connection, table, dataList,escape=['str','int','float','datetime.datetime']):
+        cnxn = pyodbc.connect(connection)
+        cursor = cnxn.cursor()
+        '''data为列表时，批量导入数据'''
+        try:
+            for data in dataList:
+                keys = str(list(data.keys())).replace("', '", "],[").replace("'", "").replace('"', '')
+                values = list(data.values())
+
+                def transform(obj, escape):
+                    if repr(type(obj))[8:-2] in escape:
+                        return obj
+                    else:
+                        return str(obj)
+
+                valueStr = [transform(x, escape) for x in values]
+
+                questionMarks = '?,' * len(data)
+                questionMarks = questionMarks[:-1]
+                sql = "insert into %s ( %s ) values ( %s )" % (table, keys, questionMarks)
+                # print(sql,valueStr)
+                cursor.execute(sql, valueStr)
+            cnxn.commit()
+            return True
+        except Exception as e:
+            log.error('保存数据库出错：保存 %s 时, 出现错误 %s', table, e)
+            return False
 
     # 存储信息函数，基类中默认数据库和文件方式存储
     def saveInfo(self, type, data, para):
