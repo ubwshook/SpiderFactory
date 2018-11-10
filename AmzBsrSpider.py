@@ -5,19 +5,26 @@
 功能描述：亚马逊最佳销量榜品类采集爬虫，
 以https://www.amazon.cn/gp/bestsellers为入口，
 抓取左侧品类结构
+---------------------------------------------
+修改1：2018年11月10日
+修改人： Shook
+修改内容： 支持多线程抓取
 -------------------------------------------'''
 import WebSpider
 import re
 import log
 import queue
+from SpiderEnhance import SpiderThread
+import time
 
 # 定义AmzBsrSpider类，继承WebSpider
 class AmzBsrSpider(WebSpider.WebSpider):
     # 初始化函数
-    def __init__(self):
+    def __init__(self, threadCount):
         super(AmzBsrSpider, self).__init__()
         # 建立一个队列用于存储不断生成URL信息
         self.urlQueue = queue.Queue()
+        self.threadCount = threadCount
 
     # 抓取页面左侧的class="zg_selected"下的内容，采用正则表达式
     def regeContent(self, url, html):
@@ -85,14 +92,7 @@ class AmzBsrSpider(WebSpider.WebSpider):
 
     # 爬虫主流程，先把种子url放入队列，然后进行抓取，抓到的子类会补充到队列当中，
     # 只要队列不是空的，就一直继续抓取，直到所有品类都抓到
-    def start(self, url):
-        log.critical("亚马逊品类信息爬虫启动")
-        level = 0
-        urlInfo = {
-            'url': url,
-            'level': level
-        }
-        self.urlQueue.put(urlInfo)
+    def start(self):
         while not self.urlQueue.empty():
             urlInfo = self.urlQueue.get()
             requestInfo = self.setRequestInfo(url=urlInfo['url'])
@@ -103,7 +103,31 @@ class AmzBsrSpider(WebSpider.WebSpider):
         print("任务结束")
         log.critical("亚马逊品类信息抓取完毕")
 
+    # 多线程启动函数，支持多线程后，调用此函数进行启动，原来的start将作为线程内启动函数
+    def mthStart(self, url):
+        log.critical("亚马逊品类信息爬虫启动")
+        level = 0
+        urlInfo = {
+            'url': url,
+            'level': level
+        }
+        self.urlQueue.put(urlInfo)
+        thlist = list()
+        for i in range(self.threadCount):
+            th = SpiderThread(i, self.start)
+            thlist.append(th)
+
+        for i in range(self.threadCount):
+            log.critical('线程 %s：开始运行(正常)', thlist[i].name)
+            thlist[i].start()
+            # 防止启动时队列空的情况
+            time.sleep(5)
+
+        for i in range(self.threadCount):
+            log.critical('线程 %s：join', thlist[i].name)
+            thlist[i].join()
+
 
 # 实例化一个AmzBsrSpider，并且调用start函数将其启动。
-testSpider = AmzBsrSpider()
-testSpider.start(url='https://www.amazon.cn/gp/bestsellers')
+testSpider = AmzBsrSpider(3)
+testSpider.mthStart(url='https://www.amazon.cn/gp/bestsellers')
