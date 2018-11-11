@@ -9,12 +9,26 @@ import time
 import requests
 import log
 import pyodbc
+import gvalue
+from SpiderEnhance import proxyThread
+import random
+
+proxyList = list()
 
 # 爬虫主类
 class WebSpider:
     # 初始化函数
-    def __init__(self):
+    def __init__(self, isProxy=False, spiderName=''):
         self.taskId = int(time.time())
+        self.isProxy = isProxy
+        self.spiderName = spiderName
+        # 如果需要开启代理，那么启动代理线程
+        if self.isProxy == True:
+            gvalue._init()
+            gvalue.set_value('proxySwitch', True)
+            th_proxy = proxyThread(25, spiderName)  # pack 已经被丢弃使用 ##其中只有一个参数在用(即获取间隔时间60*3),其他已丢弃
+            th_proxy.start()
+            time.sleep(10)
 
     # 设置请求信息的内容，除了URL外，其他参数都有默认值
     def setRequestInfo(self,
@@ -59,13 +73,23 @@ class WebSpider:
         headers = requestInfo['headers']
         encoding = requestInfo['encoding']
         maxtimes = requestInfo['max_times']
-        timeout  = requestInfo['timeout']
+        timeout = requestInfo['timeout']
         status = False
         times = 0
         #  一个页面最多请求maxtimes
         while times < maxtimes and not status:
             try:
-                res = requests.get(url, headers=headers, timeout=timeout)
+                # 如果使用代理，那么请求的时候加上proxy
+                if self.isProxy:
+                    proxyIp = random.choice(proxyList)
+                    proxies = {
+                        "http": "http://" + str(proxyIp),
+                        "https": "https://" + str(proxyIp)
+                    }
+
+                    res = requests.get(url, headers=headers, proxies=proxies, timeout=timeout)
+                else:
+                    res = requests.get(url, headers=headers, timeout=timeout)
                 res = res.content.decode(encoding)
                 if '' == res:
                     times = times + 1

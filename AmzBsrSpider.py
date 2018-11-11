@@ -20,8 +20,8 @@ import time
 # 定义AmzBsrSpider类，继承WebSpider
 class AmzBsrSpider(WebSpider.WebSpider):
     # 初始化函数
-    def __init__(self, threadCount):
-        super(AmzBsrSpider, self).__init__()
+    def __init__(self, threadCount, isProxy=False):
+        super(AmzBsrSpider, self).__init__(isProxy=isProxy, spiderName='Amazon category tree')
         # 建立一个队列用于存储不断生成URL信息
         self.urlQueue = queue.Queue()
         self.threadCount = threadCount
@@ -129,5 +129,5 @@ class AmzBsrSpider(WebSpider.WebSpider):
 
 
 # 实例化一个AmzBsrSpider，并且调用start函数将其启动。
-testSpider = AmzBsrSpider(3)
+testSpider = AmzBsrSpider(3, isProxy=True)
 testSpider.mthStart(url='https://www.amazon.cn/gp/bestsellers')
