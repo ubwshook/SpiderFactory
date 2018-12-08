@@ -15,12 +15,13 @@ import re
 import log
 import queue
 from SpiderEnhance import SpiderThread
+from SpiderEnhance import MultiProStarter
 import time
 
 # 定义AmzBsrSpider类，继承WebSpider
 class AmzBsrSpider(WebSpider.WebSpider):
     # 初始化函数
-    def __init__(self, threadCount, isProxy=False):
+    def __init__(self, threadCount, isProxy=False, **args):
         super(AmzBsrSpider, self).__init__(isProxy=isProxy, spiderName='Amazon category tree')
         # 建立一个队列用于存储不断生成URL信息
         self.urlQueue = queue.Queue()
@@ -77,7 +78,6 @@ class AmzBsrSpider(WebSpider.WebSpider):
             result.append(cateInfo)
             # 新获取的URL放入队列
             self.urlQueue.put(newUrlInfo)
-            print(cateInfo)
 
         return result
 
@@ -98,13 +98,14 @@ class AmzBsrSpider(WebSpider.WebSpider):
             requestInfo = self.setRequestInfo(url=urlInfo['url'])
             html = self.getHtml(requestInfo)
             data = self.htmlParse(html, urlInfo)
-            self.saveInfo('f', data, 'bsr_cate.txt')
+            self.saveInfo('f', data, 'bsr_cate_' + str(self.taskId) + '.txt')
 
         print("任务结束")
         log.critical("亚马逊品类信息抓取完毕")
 
     # 多线程启动函数，支持多线程后，调用此函数进行启动，原来的start将作为线程内启动函数
-    def mthStart(self, url):
+    def mthStart(self):
+        url = 'https://www.amazon.cn/gp/bestsellers'
         log.critical("亚马逊品类信息爬虫启动")
         level = 0
         urlInfo = {
@@ -127,7 +128,31 @@ class AmzBsrSpider(WebSpider.WebSpider):
             log.critical('线程 %s：join', thlist[i].name)
             thlist[i].join()
 
+if __name__=="__main__":
+    flag = True  #是否使用多进程
 
-# 实例化一个AmzBsrSpider，并且调用start函数将其启动。
-testSpider = AmzBsrSpider(3, isProxy=True)
-testSpider.mthStart(url='https://www.amazon.cn/gp/bestsellers')
+    if not flag:
+        # 实例化一个AmzBsrSpider，并且调用start函数将其启动。
+        testSpider = AmzBsrSpider(3, isProxy=False)
+        testSpider.mthStart()
+    else:
+        configList = list()
+
+        configInfo = dict()
+        configInfo['threadCount'] = 2
+        configInfo['isProxy'] = False
+        configInfo['crawlerClass'] = AmzBsrSpider
+        configList.append(configInfo)
+
+        configInfo = dict()
+        configInfo['threadCount'] = 3
+        configInfo['isProxy'] = False
+        configInfo['crawlerClass'] = AmzBsrSpider
+        configList.append(configInfo)
+
+        starter = MultiProStarter()
+        starter.start(configList, 2)
+
+
+
+

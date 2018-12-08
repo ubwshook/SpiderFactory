@@ -11,6 +11,7 @@ import json
 import time
 import gvalue
 import WebSpider
+import multiprocessing
 
 # 多线程模块，将爬虫启动函数传递给线程即可
 class SpiderThread(threading.Thread):
@@ -57,3 +58,29 @@ class proxyThread(threading.Thread):
                 log.critical('生成 Proxy Failed' + str(e))
             time.sleep(self.interval)
 
+class MultiProStarter():
+    def func(self, configInfo):
+        try:
+            print(configInfo)
+            crawlerClass = configInfo['crawlerClass']
+            crawler = crawlerClass(**configInfo)
+            crawler.mthStart()
+        except Exception as e:
+            print(e)
+            time.sleep(5)
+
+    def start(self, configList, processNum):
+        # 装载配置信息
+        queue = multiprocessing.Queue()
+        for configInfo in configList:
+            queue.put(configInfo)
+
+        pool = multiprocessing.Pool(processes=processNum)
+
+        while not queue.empty():
+            configInfo = queue.get()
+            pool.apply_async(self.func, (configInfo,))  # 维持执行的进程总数为processes，当一个进程执行完毕后会添加新的进程进去
+            time.sleep(5)
+
+        pool.close()
+        pool.join()
