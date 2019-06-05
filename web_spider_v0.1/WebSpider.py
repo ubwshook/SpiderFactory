@@ -114,7 +114,7 @@ class WebSpider:
         return
 
     # 如果使用数据保存，覆写此函数
-    def saveByDb(self, connection, table, dataList,escape=['str','int','float','datetime.datetime']):
+    def saveByDb(self, connection, table, dataList, escape=['str','int','float','datetime.datetime']):
         cnxn = pyodbc.connect(connection)
         cursor = cnxn.cursor()
         '''data为列表时，批量导入数据'''
