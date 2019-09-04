@@ -9,6 +9,8 @@ import re
 import WebSpider
 import json
 import datetime
+from mysql_operator import MySqlOperator
+import log
 
 # 创建一个爬虫对象
 testSpider = WebSpider.WebSpider()
@@ -45,18 +47,23 @@ for mg in mgData:
         'mgName': mgName,
         'cyId': cyId,
         'cyName': cyName,
-        'fundIdList': fundIdList,
-        'fundNameList': fundNameList,
-        'days': days,
-        'bestScore': bestScore,
-        'bsetFundId': bsetFundId,
-        'bsetFundName': bsetFundName,
-        'scale': scale,
-        'ctime': ctime
+        # 'fundIdList': fundIdList,
+        # 'fundNameList': fundNameList,
+        # 'days': days,
+        # 'bestScore': bestScore,
+        # 'bsetFundId': bsetFundId,
+        # 'bsetFundName': bsetFundName,
+        # 'scale': scale,
+        # 'ctime': ctime
     }
 
     mgInfoList.append(mgInfo)
 
 # 最后进行数据库批量保存
-testSpider.saveByDb(CONNECTION, 'MgList', mgInfoList)
+try:
+    db_handler = MySqlOperator("localhost", "root", "", "shock_info")
+    db_handler.bulk_insert('ttjj_mg', mgInfoList)
+except Exception as e:
+    log.critical("错误：" + str(e))
+
 
