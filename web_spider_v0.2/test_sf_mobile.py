@@ -1,13 +1,19 @@
 import json
 import time
+import random
 from urllib.parse import urlencode
 from common import get_regex, field_mapping
 from tb_tools import get_sign
-from tools.mysql_operator import MySqlOperator
+#from tools.mysql_operator import MySqlOperator
 from crawl import Crawler
 from sf_cate import cate_list
+from my_thread import ProxyThread, PROXY_LIST
 
-db = MySqlOperator(server='127.0.0.1', user_name='root', password='', dbname='taobao_sf')
+proxy_th = ProxyThread(30, 'proxy', 3000)
+proxy_th.start()
+time.sleep(5)
+
+#db = MySqlOperator(server='127.0.0.1', user_name='root', password='', dbname='taobao_sf')
 city = '三门峡'
 for cate_info in cate_list:
     cate_id = cate_info['id']
@@ -20,7 +26,10 @@ for cate_info in cate_list:
             'user-agent': 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.131 Mobile Safari/537.36'
         }
         crawler = Crawler()
-        res, session = crawler.crawl(url=url, headers=headers)
+        proxy_ip = random.choice(PROXY_LIST)
+        proxies = {"https": 'https://' + proxy_ip,
+                   "http": 'http://' + proxy_ip}
+        res, session = crawler.crawl(url=url, headers=headers, proxies=proxies)
         cookies = res.cookies.get_dict()
         m_h5_tk = cookies['_m_h5_tk']
         app_key = '12574478'
@@ -41,8 +50,10 @@ for cate_info in cate_list:
         }
 
         url = 'https://h5api.m.taobao.com/h5/mtop.taobao.govauction.sfsearchlist/1.0/?' + urlencode(params)
-
-        res, new_session = crawler.crawl(url=url, headers=headers, session=session)
+        proxy_ip = random.choice(PROXY_LIST)
+        proxies = {"https": 'https://' + proxy_ip,
+                   "http": 'http://' + proxy_ip}
+        res, new_session = crawler.crawl(url=url, headers=headers, session=session, proxies=proxies)
         raw_data = get_regex(r'mtopjsonp14\(({[\s\S]*?})\)', res.text, 1)
         jdata = json.loads(raw_data)
         items = jdata['data']['itemList']
@@ -70,7 +81,7 @@ for cate_info in cate_list:
             item_info['city'] = city
             data_list.append(item_info)
 
-        db.bulk_insert('sf_list_itemid', data_list)
+        # db.bulk_insert('sf_list_itemid', data_list)
 
         print(page, len(items))
         totalCount = jdata['data']['totalCount']

@@ -1,10 +1,16 @@
 import json
 import time
+import random
 from urllib.parse import urlencode
 from common import get_regex, field_mapping
 from tb_tools import get_sign
 from tools.mysql_operator import MySqlOperator
 from crawl import Crawler
+from my_thread import ProxyThread, PROXY_LIST
+
+proxy_th = ProxyThread(30, 'proxy', 3000)
+proxy_th.start()
+time.sleep(5)
 
 db = MySqlOperator(server='127.0.0.1', user_name='root', password='', dbname='taobao_sf')
 rows = db.execute('SELECT distinct(itemId) FROM taobao_sf.sf_list_itemid').fetchall()
@@ -39,6 +45,9 @@ for row in rows:
 
     url = 'https://h5api.m.taobao.com/h5/mtop.taobao.govauctionmtopdetailservice.queryhttpsitemdetail/2.0/?' + urlencode(params)
 
+    proxy_ip = random.choice(PROXY_LIST)
+    proxies = {"https": 'https://' + proxy_ip,
+                "http": 'http://' + proxy_ip}
     res, new_session = crawler.crawl(url=url, headers=headers, session=session)
     raw_data = get_regex(r'mtopjsonp2\(({[\s\S]*?})\)', res.text, 1)
     jdata = json.loads(raw_data)

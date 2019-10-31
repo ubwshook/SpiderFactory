@@ -51,6 +51,7 @@ class Crawler:
                 if self.method == 'post':
                     response = session.post(url=url, **paras)
                 else:
+                    print(paras)
                     response = session.get(url=url, **paras)
                 if 'encoding' in kwargs.keys():
                     response.encoding = kwargs['encoding']
@@ -65,12 +66,6 @@ class Crawler:
 
         return None, None
 
-
-0	149	20:45:03	SELECT itemId, title, startTime, endTime, acutionAddress,
- location, sellerNick,
- FROM taobao_sf.item_detail
- where bidstatus = 2	Error Code: 1064. You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'FROM taobao_sf.item_detail
- where bidstatus = 2' at line 3	0.000 sec
 
 
 
