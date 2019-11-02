@@ -9,3 +9,9 @@
 class TutorialPipeline(object):
     def process_item(self, item, spider):
         return item
+
+
+class DemoPipeline(object):
+    def process_item(self, item, spider):
+        print(item)
+        return item
