@@ -20,11 +20,13 @@ class SqlServerOperator:
         self.db_connect.commit()
 
     def get_sqlstr(self, sql_dict, table_name):
-        keys = [key for key in sql_dict]
+        keys = ['@@' + key + '##' for key in sql_dict]
         keys_str = str(keys).replace("[", '(').replace(']', ')').replace("'", "")
+        keys_str = keys_str.replace('@@', '[').replace('##', ']')
         value_str = ['{' + key + '}' for key in sql_dict]
         value_str = str(value_str).replace("[", '(').replace(']', ')')
         sql_str = ('INSERT INTO ' + table_name + ' ' + keys_str + ' VALUES ' + value_str).format(**sql_dict)
+        print(sql_str)
         return sql_str
 
     def insert(self, table_name, data_dict):

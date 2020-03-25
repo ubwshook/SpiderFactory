@@ -6,8 +6,8 @@ class Crawler:
     def __init__(self):
         self.encoding = 'utf-8'
         self.user_agent = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:56.0) Gecko/20100101 Firefox/56.0'
-        self.timeout = 5
-        self.max_times = 10
+        self.timeout = 10
+        self.max_times = 20
         self.method = 'get'
         self.data = ''
         self.headers = {'User-Agent': self.user_agent}
@@ -31,6 +31,8 @@ class Crawler:
         for para_name in param_list:
             if para_name in kwargs.keys():
                 paras[para_name] = kwargs[para_name]
+                if para_name == 'cookies':
+                    paras['cookies'] = dict(map(lambda x: x.split('='), kwargs[para_name].split(";")))
 
         return paras
 
@@ -51,7 +53,6 @@ class Crawler:
                 if self.method == 'post':
                     response = session.post(url=url, **paras)
                 else:
-                    print(paras)
                     response = session.get(url=url, **paras)
                 if 'encoding' in kwargs.keys():
                     response.encoding = kwargs['encoding']
